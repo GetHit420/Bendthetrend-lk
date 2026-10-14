@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+/* Tailwind theme: colours and fonts used as classes (bg-chalk, text-gold, font-display…) */
+@theme inline {
+  --color-chalk: var(--chalk);
+  --color-ink: var(--ink);
+  --color-blush: var(--blush);
+  --color-gold: var(--gold);
+  --color-sindoor: var(--sindoor);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-plum: #2A1420;
+  --color-wa: #1F7A4D;
+  --font-display: var(--ff-display), Didot, "Bodoni 72", Georgia, serif;
+  --font-sans: var(--ff-sans), "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* Tailwind v4 makes buttons use the default cursor; keep the pointer */
+@layer base {
+  button:not(:disabled), [role="button"] { cursor: pointer; }
+}
+
+/* ---------- Design tokens: the site always uses the dark plum palette ---------- */
+:root{
+  --chalk:#1B0D15; --ink:#F6EAE6; --blush:#2B1822; --gold:#D4AA5E;
+  --sindoor:#E07A88; --muted:#BFA8B1; --line:#3B2330;
+  --ease-silk:cubic-bezier(.2,.7,.1,1);
+  color-scheme:dark;            /* dark form controls and scrollbars on every device */
+  background:#1B0D15;           /* no white flash before the page paints, or when you pull past the edge */
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px)}
+body{background:var(--chalk); color:var(--ink); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--gold); outline-offset:3px}
+::selection{background:var(--gold); color:var(--chalk)}
+
+/* ---------- Smooth scrolling (Lenis) ---------- */
+html.lenis, html.lenis body{height:auto}
+.lenis:not(.lenis-autoToggle).lenis-stopped{overflow:clip}
+.lenis [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-smooth iframe{pointer-events:none}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:smooth} }
+
+@layer components {
+/* ---------- Fabric art (placeholders until you add photography) ----------
+   A frame is two layers:
+     .fabric      the outer shape: size, rounded/arched corners, gold ring (box-shadow), labels
+     .fabric-art  an inner layer that holds the silk and the photo and is CUT to the frame's shape
+                  with clip-path. iPhone Safari does not reliably clip pictures with rounded
+                  corners + overflow, but it always honours clip-path. --r holds the corner radii;
+                  Fabric.tsx copies them from the outer frame, and .arch sets them for first paint. */
+:where(.fabric){position:relative} /* low priority, so "absolute" on the small hero arches still wins */
+.fabric{isolation:isolate}
+.arch{--r:999px 999px 0 0}
+.fabric-art{position:absolute; inset:0; z-index:0; overflow:hidden; border-radius:inherit; pointer-events:none;
+  -webkit-clip-path:inset(0 round var(--r, 0px));
+          clip-path:inset(0 round var(--r, 0px))}
+/* everything else inside a frame (labels, badges) sits above the art */
+:where(.fabric > :not(.fabric-art)){position:relative; z-index:1}
+
+/* the silk is a little taller than its frame so it can drift for parallax without showing an edge */
+.fabric-art::before{content:""; position:absolute; inset:-14% 0; z-index:-3;
+  transform:translate3d(0, var(--py,0px), 0);
+  background:
+    repeating-linear-gradient(100deg, rgba(255,255,255,0) 0 38px, rgba(255,255,255,.10) 52px, rgba(0,0,0,.10) 78px, rgba(255,255,255,0) 96px),
+    var(--silk);}
+.fabric-art::after{content:""; position:absolute; inset:-14% 0; z-index:-2; opacity:.26; mix-blend-mode:screen; pointer-events:none;
+  transform:translate3d(0, calc(var(--py,0px) * 1.6), 0);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23F3D48C' stroke-width='1'%3E%3Cpath d='M32 10c7 8 7 18 0 26-7-8-7-18 0-26z'/%3E%3Cpath d='M20 30c6 1 10 4 12 6-4 2-9 2-12-6zM44 30c-6 1-10 4-12 6 4 2 9 2 12-6z'/%3E%3Ccircle cx='32' cy='46' r='1.6'/%3E%3Ccircle cx='0' cy='0' r='1.2'/%3E%3Ccircle cx='64' cy='64' r='1.2'/%3E%3Ccircle cx='0' cy='64' r='1.2'/%3E%3Ccircle cx='64' cy='0' r='1.2'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:64px 64px;}
+
+/* ---------- Your photos (in /public/images, optimised automatically by next/image) ----------
+   .fabric-photo is the box the photo sits in; the <img> fills it with object-fit:contain. */
+.fabric-photo{position:absolute; inset:0; z-index:-1;
+  transform:translate3d(0, var(--iy,0px), 0);
+  filter:drop-shadow(0 18px 24px rgba(20,8,14,.28));
+  opacity:0; transition:opacity .9s var(--ease-silk), scale 1.2s var(--ease-silk)}
+.fabric-photo img{object-fit:contain; object-position:center bottom}
+.fabric.has-img .fabric-photo{opacity:1}
+/* In the "What we make" tiles the figure fades out at the bottom so the label stays readable on the silk */
+.fabric-photo[data-tile]{top:4%; bottom:auto; height:125%;
+  -webkit-mask-image:linear-gradient(to top, transparent 0, transparent 28%, #000 52%);
+          mask-image:linear-gradient(to top, transparent 0, transparent 28%, #000 52%)}
+.fabric-photo[data-tile] img{object-position:center top}
+/* Curved frames: leave headroom so the whole figure sits inside the arch, standing on the bottom edge */
+.fabric[data-curve] .fabric-photo:not([data-tile]){top:var(--curve-gap,4%)}
+.fabric.has-img .ph{display:none}
+/* Tiles: the figure lifts gently on hover (mouse only) */
+.tile .fabric-photo{transform-origin:center top}
+@media (hover:hover){ .tile:hover .fabric-photo{scale:1.04} }
+
+/* ---------- Phones and tablets: lighter and steadier ----------
+   No parallax inside frames, no blend modes and no photo shadows: these are the
+   effects that make older iPhones slow and that trip Safari's clipping bugs. */
+@media (max-width: 1023px), (hover: none){
+  .fabric[data-curve]{--curve-gap:12%}
+  .fabric[data-curve].hero-small{--curve-gap:20%}            /* the two little hero arches are the narrowest */
+  .fabric[data-curve] .fabric-photo[data-tile]{top:16%}      /* big "Bridal gowns" tile */
+  .fabric-art::before, .fabric-art::after, .fabric-photo{transform:none}
+  .fabric-art::after{mix-blend-mode:normal; opacity:.14}
+  .fabric-photo{filter:none}
+}
+@media (min-width: 1024px) and (hover: hover){
+  .fabric[data-curve]{--curve-gap:4%}
+}
+
+.silk-crimson{--silk:linear-gradient(120deg,#5A0F1E 0%,#9B2438 28%,#6E1426 52%,#B8434F 74%,#5A0F1E 100%)}
+.silk-rose{--silk:linear-gradient(115deg,#C99A94 0%,#E7C4BC 30%,#B98079 55%,#EBCFC6 78%,#C4908A 100%)}
+.silk-ivory{--silk:linear-gradient(110deg,#D9C6A8 0%,#F2E6D0 32%,#CDB691 56%,#F4EAD8 80%,#D5BF9C 100%)}
+.silk-pearl{--silk:linear-gradient(110deg,#E4DCD6 0%,#FAF6F2 32%,#D8CEC7 56%,#FBF8F5 80%,#E0D7D0 100%)}
+.silk-emerald{--silk:linear-gradient(120deg,#0E3A2F 0%,#1F6650 30%,#114536 55%,#2E7A60 78%,#0E3A2F 100%)}
+.silk-plum{--silk:linear-gradient(120deg,#2A1024 0%,#5B2450 30%,#3A1534 55%,#77386A 78%,#2A1024 100%)}
+.silk-marigold{--silk:linear-gradient(115deg,#9C5A12 0%,#D99A2B 30%,#A8651A 55%,#E6B24A 78%,#9C5A12 100%)}
+.silk-sky{--silk:linear-gradient(115deg,#7C95A6 0%,#B3C6D1 30%,#8098A8 55%,#C4D3DB 78%,#7C95A6 100%)}
+.silk-lilac{--silk:linear-gradient(115deg,#A690B4 0%,#D2C2DC 30%,#9C85AC 55%,#DCCFE4 78%,#A690B4 100%)}
+.silk-noir{--silk:linear-gradient(120deg,#141014 0%,#3A2F37 30%,#1C161B 55%,#4A3C45 78%,#141014 100%)}
+
+.arch{border-radius:999px 999px 0 0}
+.arch-ring{box-shadow:0 0 0 1px var(--gold), 0 0 0 6px var(--chalk), 0 0 0 7px var(--gold)}
+
+/* The orchestrated opening: the hero arch rises and its curved line of type unfurls */
+@media (prefers-reduced-motion: no-preference){
+  .hero-arch{animation:rise 1.2s var(--ease-silk) both}
+  .hero-curve text{animation:unfurl 1.8s .5s cubic-bezier(.3,.6,.2,1) both}
+  .hero-small{animation:rise 1.2s .35s var(--ease-silk) both}
+  @keyframes rise{from{clip-path:inset(100% 0 0 0 round 999px 999px 0 0)}to{clip-path:inset(-8px -8px 0 -8px round 999px 999px 0 0)}}
+  @keyframes unfurl{from{letter-spacing:.9em; opacity:0}to{letter-spacing:.3em; opacity:1}}
+}
+
+/* Buttons: a soft press and lift */
+.btn{transition:transform .35s var(--ease-silk), opacity .2s, background-color .25s, color .25s, box-shadow .35s var(--ease-silk)}
+@media (hover:hover){ .btn:hover{transform:translateY(-2px); box-shadow:0 14px 30px -14px rgba(42,20,32,.45)} }
+.btn:active{transform:translateY(0) scale(.98)}
+
+/* Form fields */
+.field{background:transparent; border:0; border-bottom:1px solid #6A4556; padding:.55rem 0; font-size:1rem; color:#F6EAE6; border-radius:0; width:100%; transition:border-color .3s}
+.field::placeholder{color:#9C8490}
+.field:focus{outline:none; border-bottom-color:#D4AA5E}
+.field[aria-invalid="true"]{border-bottom-color:#F2A3AE}
+.chip{display:inline-flex; align-items:center; padding:.5rem 1rem; border:1px solid #6A4556; border-radius:999px; cursor:pointer; font-size:.9rem; transition:background-color .25s, color .25s, border-color .25s}
+.chip:has(input:checked){background:#F6EAE6; color:#2A1420; border-color:#F6EAE6}
+.chip:has(input:focus-visible){outline:2px solid #D4AA5E; outline-offset:3px}
+.dropzone.is-over{border-color:#D4AA5E; background:rgba(212,170,94,.08)}
+
+/* Our Works filters */
+.filter{flex:none; padding:.55rem 1.1rem; border:1px solid var(--line); border-radius:999px; font-size:.95rem; transition:all .25s}
+.filter:hover{border-color:var(--ink)}
+.filter[aria-pressed="true"]{background:var(--ink); color:var(--chalk); border-color:var(--ink)}
+
+/* Mobile action bar sits above the phone's home indicator */
+.action-bar{padding-bottom:calc(env(safe-area-inset-bottom,0px) + .75rem)}
+.no-scrollbar::-webkit-scrollbar{display:none} .no-scrollbar{scrollbar-width:none}
+}
